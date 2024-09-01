@@ -7,8 +7,9 @@ class Graph:
     GATE_CHOICES = ["2NAND", "1NOT", "2NOR", "2AND", "2OR"]
     INVERTING_GATES = ["1NOT", "2NAND", "2NOR"]
     NON_INVERTING_GATES = ["2AND", "2OR"]
-    def __init__(self, name, max_num_of_gates = 20, max_sizing = 50):
+    def __init__(self, name, max_num_of_gates = 20, max_sizing = 50, BETA = 2):
         self.name = name
+        self.BETA = BETA
         self.max_num_of_gates = np.random.randint(10, max_num_of_gates)
         self.max_sizing = max_sizing
         self.circuit = self.__make_circuit()
@@ -16,10 +17,46 @@ class Graph:
     def idealized_weights(self, gate_list:list, input_cap:int, output_cap:int):
         """This function implements Linear delay model to calculate 
         the weights of gates for minimum propagation delay.
+        The model is based on the following equation:
+        f_opt = (G*H)^(1/n) 
+        where G = product of g_coeffecients of all gates in the circuit
+        H = output_cap/input_cap
+        n = number of gates in the circuit
+        gate_list : `list[str]` list of gates in the circuit
+        input_cap : `int` input capacitance of the circuit's driver
+        output_cap : `int` output capacitance of the circuit's load
         """
+        g_coeffecients = {
+            "2NAND": (self.BETA + 2)/(self.BETA + 1),
+            "1NOT": (self.BETA + 1)/(self.BETA + 1),
+            "2NOR": (2*self.BETA + 1)/(self.BETA + 1),
+            "2AND": (self.BETA + 2)/(self.BETA + 1),
+            "2OR": (2*self.BETA + 1)/(self.BETA + 1)
+
+        }
+        # Not used in this particular implementation but maybe used in future. idk
+        # parasitic_delay_coeffecients = {
+        #     "2NAND": (2*self.BETA + 2)/(self.BETA + 1),
+        #     "1NOT": (self.BETA + 1)/(self.BETA + 1),
+        #     "2NOR": (4*self.BETA + 1)/(self.BETA + 1),
+        #     "2AND": (self.BETA + 1)/(self.BETA + 1),
+        #     "2OR": (self.BETA + 1)/(self.BETA + 1)
+        # }
+        H, G= \
+            output_cap/input_cap, \
+            np.prod([g_coeffecients[gate_idx] for gate_idx in gate_list]) 
+        
+        f_opt = np.round(    (G*H) ** (1/len(gate_list))    )
+        weights, capacitance_list = np.zeros(len(gate_list)), np.zeros(len(gate_list))
+        for i in range(len(gate_list)):
+            x = f_opt * input_cap / g_coeffecients[gate_list[i]] if i == 0 \
+                else f_opt * capacitance_list[i-1] / g_coeffecients[gate_list[i]]
+            capacitance_list[i] = x
+            weights[i] = max(int(x / (   g_coeffecients[gate_list[i]] * (self.BETA + 1)   )) , 1)
+
+
         # if not hasattr(self, "gate_list"):
         #     raise AttributeError("Graph object has no attribute 'gate_list'. Run __make_circuit() first.")
-        weights = np.random.randint(1, self.max_sizing, len(gate_list))
         return weights
     
 
