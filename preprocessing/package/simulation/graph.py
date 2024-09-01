@@ -13,6 +13,17 @@ class Graph:
         self.max_sizing = max_sizing
         self.circuit = self.__make_circuit()
 
+    def idealized_weights(self, gate_list:list, input_cap:int, output_cap:int):
+        """This function implements Linear delay model to calculate 
+        the weights of gates for minimum propagation delay.
+        """
+        # if not hasattr(self, "gate_list"):
+        #     raise AttributeError("Graph object has no attribute 'gate_list'. Run __make_circuit() first.")
+        weights = np.random.randint(1, self.max_sizing, len(gate_list))
+        return weights
+    
+
+
     def make_adjacency_list_and_feature_matrix(self):
         return np.array(self.circuit.make_adjacency_list()).T, self.circuit.make_feature_matrix()
 
@@ -34,18 +45,38 @@ class Graph:
         self.driver_sizes = np.random.randint(1, self.max_sizing, len(self.drivers))
 
         gate_dict, driver_dict, eos_dict = {}, {}, {}
-        for i in range(len(self.gate_list)):
-            gate_dict[f"gate{i+1}"] = {"type":self.gate_list[i], "k":int(self.gate_sizes[i]), "input_components" : [f"gate{i}" for _ in range(int(self.gate_list[i][0]))] if i > 0 else self.drivers}
-        for i in range(len(self.drivers)):
-            driver_dict[f"v{i+1}"] = {"ideal":False, "k":int(self.driver_sizes[i])}
+        ideal_gate_dict, ideal_driver_dict, ideal_eos_dict = {}, {}, {}
+
         eos_dict["k"] = np.random.randint(1, self.max_sizing)
         eos_dict["input_gate"] = f"gate{len(self.gate_list)}"
         eos_dict["capacitance"] = 10
-        # count number of invering gates in gate list
-        self.num_inverting_gates = len([gate for gate in self.gate_list if gate in self.INVERTING_GATES])
-        inverting = True if self.num_inverting_gates % 2  else False
+
+        ideal_eos_dict["k"] = eos_dict["k"]
+        ideal_eos_dict["input_gate"] = f"gate{len(self.gate_list)}"
+        ideal_eos_dict["capacitance"] = 10
+        self.ideal_weights = self.idealized_weights(self.gate_list, self.driver_sizes[0], eos_dict["k"])
+
+
+
+        for i in range(len(self.gate_list)):
+            gate_dict[f"gate{i+1}"] = {"type":self.gate_list[i], "k":int(self.gate_sizes[i]), "input_components" : [f"gate{i}" for _ in range(int(self.gate_list[i][0]))] if i > 0 else self.drivers} 
+            ideal_gate_dict[f"gate{i+1}"] = {"type":self.gate_list[i], "k":int(self.ideal_weights[i]), "input_components" : [f"gate{i}" for _ in range(int(self.gate_list[i][0]))] if i > 0 else self.drivers}
+
+        for i in range(len(self.drivers)):
+            driver_dict[f"v{i+1}"] = {"ideal":False, "k":int(self.driver_sizes[i])}
+            ideal_driver_dict[f"v{i+1}"] = {"ideal":False, "k":int(self.driver_sizes[i])}
         
-        self.circuit = Circuit(self.name, gate_dict, driver_dict, eos_dict, inverting)
+        # count number of invering gates in gate list
+
+
+
+        self.num_inverting_gates = len([gate for gate in self.gate_list if gate in self.INVERTING_GATES])
+        self.inverting = True if self.num_inverting_gates % 2  else False
+
+
+        self.circuit = Circuit(self.name, gate_dict, driver_dict, eos_dict, self.inverting)
+        self.idealized_circuit = Circuit(self.name, ideal_gate_dict, ideal_driver_dict, ideal_eos_dict, self.inverting)
+
         return self.circuit
     
 

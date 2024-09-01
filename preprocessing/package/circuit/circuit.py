@@ -67,14 +67,14 @@ class Circuit:
         self._voltage_sources = {}
         self._eos = None
         self.netlist = ""
-        self.voltage_dict = {key + name: value for key, value in voltage_dict.items()}
-        self.gate_dict = {key + name: value for key, value in gate_dict.items()}
+        self.voltage_dict = {key + name: value for key, value in voltage_dict.copy().items()}
+        self.gate_dict = {key + name: value for key, value in gate_dict.copy().items()}
         self._inverting = inverting
 
-        for _, value in gate_dict.items():
+        for _, value in gate_dict.copy().items():
             value['input_components'] = [item + name for item in value['input_components']]
         
-        self.eos_dict = eos_dict
+        self.eos_dict = eos_dict.copy()
         
         self.eos_dict["input_gate"] = eos_dict["input_gate"] + name
         
