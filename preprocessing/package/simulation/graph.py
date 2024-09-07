@@ -7,10 +7,12 @@ class Graph:
     GATE_CHOICES = ["2NAND", "1NOT", "2NOR", "2AND", "2OR"]
     INVERTING_GATES = ["1NOT", "2NAND", "2NOR"]
     NON_INVERTING_GATES = ["2AND", "2OR"]
-    def __init__(self, name, max_num_of_gates = 20, max_sizing = 50, BETA = 2):
+    def __init__(self, name, max_num_of_gates = 20, max_sizing = 50, BETA = 2, min_num_of_gates = 10):
         self.name = name
         self.BETA = BETA
-        self.max_num_of_gates = np.random.randint(10, max_num_of_gates)
+        if max_num_of_gates < min_num_of_gates:
+            raise ValueError("max_num_of_gates should be greater than min_num_of_gates")
+        self.max_num_of_gates = np.random.randint(min_num_of_gates, max_num_of_gates)
         self.max_sizing = max_sizing
         self.circuit = self.__make_circuit()
 
